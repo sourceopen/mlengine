@@ -1,0 +1,127 @@
+buildscript {
+    ext {
+        springBootVersion = '2.3.1.RELEASE'
+    }
+    repositories {
+        jcenter()
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+        mavenCentral()
+    }
+    dependencies {
+        classpath('org.unbroken-dome.gradle-plugins:gradle-testsets-plugin:1.2.0')
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+        classpath "gradle.plugin.com.palantir.gradle.docker:gradle-docker:0.22.1"
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'org.springframework.boot'
+apply plugin: 'io.spring.dependency-management'
+apply plugin: 'war'
+apply plugin: 'maven-publish'
+apply plugin: 'application'
+
+group = 'com.navis'
+sourceCompatibility = '1.8'
+
+repositories {
+    mavenCentral()
+    flatDir {
+        dirs 'lib'
+    }
+}
+
+springBoot {
+    buildInfo()
+}
+
+dependencies {
+    compile fileTree(include: ['*.jar'], dir: 'src/lib')
+    // Springboot
+    compile('org.springframework.boot:spring-boot-starter-data-jpa')
+    compile('org.springframework.boot:spring-boot-starter-web')
+    runtime('com.h2database:h2')
+    testCompile('org.springframework.boot:spring-boot-starter-test')
+    // Lombok
+    annotationProcessor 'org.projectlombok:lombok:1.18.8'
+    testAnnotationProcessor "org.projectlombok:lombok:1.18.8"
+    compileOnly('org.projectlombok:lombok:1.18.8')
+    testCompileOnly('org.projectlombok:lombok:1.18.8')
+    // Guava
+    compile group: 'com.google.guava', name: 'guava', version: '24.1-jre'
+    // WebSockets
+    compile("org.springframework.boot:spring-boot-starter-websocket")
+    // Json
+    compile group: 'org.json', name: 'json', version: '20180130'
+    // Joda Time
+    compile group: 'joda-time', name: 'joda-time', version: '2.9.9'
+    // PostgreSQL
+    compile group: 'org.postgresql', name: 'postgresql', version: '9.4-1201-jdbc41'
+    // Ms SQL
+    compile group: 'com.microsoft.sqlserver', name: 'mssql-jdbc', version: '7.0.0.jre8'
+    // PostgreSQL
+    compile group: 'org.postgresql', name: 'postgresql', version: '42.2.9'
+    // Swagger
+    compile group: 'io.springfox', name: 'springfox-swagger-ui', version: '2.8.0'
+    compile group: 'io.springfox', name: 'springfox-swagger2', version: '2.8.0'
+    // Jackson
+    compile("com.fasterxml.jackson.core:jackson-databind")
+    // JSON
+    compile group: 'org.json', name: 'json', version: '20180130'
+    // Gson
+    compile group: 'com.google.code.gson', name: 'gson', version: '2.8.5'
+    // Actuator
+    compile("org.springframework.boot:spring-boot-starter-actuator")
+    // JaVers
+    compile 'org.javers:javers-core:5.2.4'
+    // Csv
+    implementation 'com.opencsv:opencsv:4.5'
+    // ModelMapper
+    compile group: 'org.modelmapper', name: 'modelmapper', version: '2.2.0'
+
+
+    //ML Engine specific dependencies
+    //compile files('libs/xgboost4j_2.11-1.1.0-criteo-20200812-071ef500-win64.jar')
+    compile group: 'com.esotericsoftware.kryo', name: 'kryo', version: '2.24.0'
+    compile group: 'org.javatuples', name: 'javatuples', version: '1.2'
+    compile group: 'com.google.guava', name: 'guava', version: '30.1-jre'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+
+tasks.withType(Test) {
+    scanForTestClasses = false
+    include "**/*Test.java"
+}
+
+mainClassName = 'com.navis.mlengine.MLEngineApplication'
+
+//disable generating tar file for now
+distTar.enabled = false
+bootDistTar.enabled = false
+distZip.enabled = false
+startScripts.enabled = false
+
+publishing {
+    repositories {
+        maven {
+            credentials {
+//                username uploadRepoUsername
+  //              password uploadRepoPassword
+            }
+    //        url = version.contains('SNAPSHOT') ? uploadRepoSnapshotUrl : uploadRepoReleaseUrl
+        }
+    }
+    publications {
+        maven(MavenPublication) {
+            //from components.java
+            artifact "$buildDir/distributions/$bootDistZip.archiveName"
+        }
+    }
+}

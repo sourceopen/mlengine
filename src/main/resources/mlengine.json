@@ -1,0 +1,191 @@
+{
+	"consumers" : {
+		"FULL_YARD_PREDICTION_PERCENTAGE_GEMLIK" : {
+			"algorithm" : "XGBOOST",
+			"predictionType" : "REGRESSION",
+			"features" : {
+				"DOW": "NUMBER",
+				"DATE": "NUMBER",
+				"MONTH": "NUMBER",
+				"YEAR": "NUMBER",
+				"ACTUALOCC": "NUMBER",
+				"CUROCCPER": "NUMBER"
+			},
+			"algoparams" : {
+				"XGBOOST" : {
+					"silent" : "0",
+					"objective" : "reg:squarederror",
+					"eval_metric" : "rmse",
+					"booster" : "gblinear",
+					"max_delta_step" : "0",
+					"min_child_wt" : "5",
+					"subsample" : "0.07789122913725656",
+					"rounds" : "2000",
+					"eta": "0.60584",
+					"alpha": "0",
+					"lambda": "0",
+					"gamma": "23.58",
+					"max_depth" : "6",
+					"n_estimators" : "82"
+				}
+			}
+		},
+		"OSLO_BLOCK_WISE" : {
+			"algorithm" : "XGBOOST",
+			"predictionType" : "REGRESSION",
+			"features" : {
+				"GROUPNAMEID": "NUMBER",
+				"GROUPNAME": "CATEGORY",
+				"DATE": "NUMBER",
+				"MONTH": "NUMBER",
+				"YEAR": "NUMBER",
+				"CUROCC": "NUMBER",
+				"PEROCC": "NUMBER"
+			},
+			"algoparams" : {
+				"XGBOOST" : {
+					"silent" : "0",
+					"objective" : "reg:squarederror",
+					"eval_metric" : "rmse",
+					"booster" : "gblinear",
+					"max_delta_step" : "2",
+					"min_child_wt" : "30",
+					"subsample" : "0.8",
+					"rounds" : "200",
+					"eta": "0.1",
+					"alpha": "0",
+					"lambda": "0",
+					"gamma": "0",
+					"max_depth" : "6",
+					"n_estimators" : "600"
+				}
+			}
+		},
+		"OSLO_BLOCK_WISE" : {
+			"algorithm" : "XGBOOST",
+			"predictionType" : "REGRESSION",
+			"features" : {
+				"GROUPNAMEID": "NUMBER",
+				"GROUPNAME": "CATEGORY",
+				"DATE": "NUMBER",
+				"MONTH": "NUMBER",
+				"YEAR": "NUMBER",
+				"CUROCC": "NUMBER",
+				"PEROCC": "NUMBER"
+			},
+			"algoparams" : {
+				"XGBOOST" : {
+					"silent" : "0",
+					"objective" : "reg:squarederror",
+					"eval_metric" : "rmse",
+					"booster" : "gblinear",
+					"max_delta_step" : "2",
+					"min_child_wt" : "30",
+					"subsample" : "0.8",
+					"rounds" : "200",
+					"eta": "0.1",
+					"alpha": "0",
+					"lambda": "0",
+					"gamma": "0",
+					"max_depth" : "6",
+					"n_estimators" : "600"
+				}
+			}
+		},
+		"FULL_YARD" : {
+			"algorithm" : "XGBOOST",
+			"predictionType" : "REGRESSION",
+			"features" : {
+				"GROUPNAMEID": "NUMBER",
+				"DATE": "NUMBER",
+				"MONTH": "NUMBER",
+				"YEAR": "NUMBER",
+				"CUROCC": "NUMBER"
+			},
+			"algoparams" : {
+				"XGBOOST" : {
+					"silent" : "0",
+					"objective" : "reg:squarederror",
+					"eval_metric" : "rmse",
+					"booster" : "gblinear",
+					"max_delta_step" : "2",
+					"min_child_wt" : "30",
+					"subsample" : "0.8",
+					"rounds" : "200",
+					"eta": "1",
+					"alpha": "0",
+					"lambda": "0",
+					"gamma": "0",
+					"max_depth" : "6",
+					"n_estimators" : "500"
+				}
+			}
+		},
+		"BOS_1" : {
+			"algorithm" : "XGBOOST",
+			"predictionType" : "MULTICLASS_CLASSIFICATION",
+			"features" : {
+				"CNTRNUM": "STRING",
+				"LO": "CATEGORY",
+				"OBACTUALVISIT": "CATEGORY",
+				"ISO": "CATEGORY",
+				"OOG": "BOOLEAN",
+				"DAYOFCAPTURE": "CATEGORY",
+				"BLOCKID": "CATEGORY"
+			},
+			"algoparams" : {
+				"XGBOOST" : {
+					"rounds" : "100",
+					"eta": "0.3",
+					"alpha": "2",
+					"lambda": "3",
+					"gamma": "0",
+					"verbosity": "1"
+				},
+				"NN" : {
+					"verbosity": "1"
+				}
+			}
+		},
+		"BOS_2": {
+			"algorithm" : "NN",
+			"predictionType" : "BINARY_CLASSIFICATION",
+			"features": {
+				"CNTRNUM" : "STRING",
+				"LO" : "CATEGORY",
+				"OBACTUALVISIT" : "CATEGORY",
+				"ISO" : "CATEGORY",
+				"DAYOFCAPTURE" : "CATEGORY",
+				"BLOCKID" : "CATEGORY",
+				"OOG" : "BOOLEAN"
+			},
+			"algoparams" : {
+				"NN": {
+					"verbosity" : "1"
+				}
+			}
+		},
+		"COMPASS_1" : {
+			"algorithm" : "NN",
+			"predictionType" : "REGRESSION",
+			"features" : {
+				"VVNAME" : "STRING",
+				"VVTYPE" : "CATEGORY",
+				"LENGTH" : "NUMBER"
+			},
+			"algoparams ": {
+				"XGBOOST": {
+					"rounds" : "100",					
+					"eta" : "0.3",
+					"alpha" : "0",
+					"lambda" : "1",
+					"gamma" : "0",
+					"verbosity" : "1"
+				},
+				"NN": {
+					"verbosity" : "1"
+				}
+			}
+		}
+	}
+}
