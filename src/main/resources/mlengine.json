@@ -30,7 +30,7 @@
 				}
 			}
 		},
-		"FULL_YARD_PREDICTION_PERCENTAGE_GEMLIK" : {
+		"FULL_YARD_PREDICTION_PERCENTAGE" : {
 			"algorithm" : "XGBOOST",
 			"predictionType" : "REGRESSION",
 			"features" : {
