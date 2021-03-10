@@ -12,6 +12,9 @@ import com.navis.mlengine.service.MLModelEncodingService;
 import com.navis.mlengine.service.MLModelService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import ml.dmlc.xgboost4j.java.Booster;
+import ml.dmlc.xgboost4j.java.XGBoost;
+import ml.dmlc.xgboost4j.java.XGBoostError;
 import org.javers.common.collections.Pair;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +22,8 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 
@@ -39,7 +44,7 @@ public class MLEngineClientCommunicationController {
 
         return new ResponseEntity("I am ready!", HttpStatus.OK);
     }
-/* TO CONTINUE
+// TO CONTINUE
     @PostMapping("/api/PredictUsingModel")
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody()
@@ -54,15 +59,24 @@ public class MLEngineClientCommunicationController {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
 
-        predictorWorkflow = this.getAppropriateWorkflow(model, consumerId);
+        try {
+            Booster booster = XGBoost.loadModel(new ByteArrayInputStream(model.getModelDump()));
+           // DMatrix testMatrix = new DMatrix(curatedTestData, testRowsCount, cols);
+            //booster.predict();
 
-        predictorWorkflow.buildAndSaveModel(mlAlgorithmConfigurationBundle);
+        } catch(XGBoostError | IOException xgberror) {
+            log.error("XGBoost error encountered!", xgberror);
+        }
+
+        //predictorWorkflow = this.getAppropriateWorkflow(model, consumerId);
+
+     //   predictorWorkflow.buildAndSaveModel(mlAlgorithmConfigurationBundle);
         return new ResponseEntity<>(HttpStatus.OK);
 
 
     }
-*/
-        @PostMapping("/api/CreateModelWithTrainingData")
+
+    @PostMapping("/api/CreateModelWithTrainingData")
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody()
     public ResponseEntity<ActualVsPredictions> modelCreationWithTrainingData(@RequestBody ArrayList<ArrayList<String>> inTrainingDataRecd, @RequestParam(name = "consumerId") String consumerId,
