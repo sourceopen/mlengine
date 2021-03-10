@@ -111,7 +111,6 @@ public class XGBoostImplementationWorkflow extends BasePredictorWorkflow {
 
                 if (fT == EFeatureType.UNKNOWN)
                     return false;
-
                 if (fT == EFeatureType.STRING || fT == EFeatureType.CATEGORY) {
                     encoders.OneHotEncodeFeatureMatrixForModelCreation(featureIndex, getXgBoostConfigurationBundle().getConsumerId());
                 } else if (fT == EFeatureType.BOOLEAN) {

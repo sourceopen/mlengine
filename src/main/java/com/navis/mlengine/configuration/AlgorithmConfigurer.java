@@ -30,6 +30,55 @@ public class AlgorithmConfigurer {
     private static final String CONSUMERS_NODE = "consumers";
     private static final String ML_CONFIG_FILE = "classpath:mlengine.json";
 
+    public GenericAlgorithmConfigurationBundle InitializeMLEngineForPredictionFromModel(String consumerId, ArrayList<ArrayList<String>> inPredictionDataRecd)
+    {
+        byte[] jsonData = new byte[0];
+        JsonNode mlConfiguration;
+
+        try {
+            File mlConfigurationFile = ResourceUtils.getFile(ML_CONFIG_FILE);
+            jsonData = Files.readAllBytes(Paths.get(mlConfigurationFile.getAbsolutePath()));
+            mlConfiguration =  (new ObjectMapper()).readTree(jsonData);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+        //Get the configuration of the consumerId
+        JsonNode configurationOfThisConsumerId = (mlConfiguration.path(CONSUMERS_NODE)).path(consumerId);
+
+        if(configurationOfThisConsumerId.isMissingNode()) //Configuration for this consumer does not exist
+            return null;
+
+        try {
+            JsonNode activeAlgorithmNode = configurationOfThisConsumerId.path("algorithm");
+            EAlgorithm activeAlgorithm = (new ObjectMapper()).convertValue(activeAlgorithmNode, EAlgorithm.class);
+
+            JsonNode predictionTypeNode = configurationOfThisConsumerId.path("predictionType");
+            EPredictionType predictionType = (new ObjectMapper()).convertValue(predictionTypeNode, EPredictionType.class);
+
+            JsonNode featuresNode = configurationOfThisConsumerId.path("features");
+            if(featuresNode.isMissingNode())
+                return null;
+
+            Map<String, EFeatureType> featuresMap = (new ObjectMapper()).convertValue(featuresNode, new TypeReference<Map<String, EFeatureType>>() {});
+            ArrayList<EFeatureType> featureTypes = new ArrayList<EFeatureType>(featuresMap.values());
+            ArrayList<String> featureNames = new ArrayList<String>(featuresMap.keySet());
+
+            JsonNode activeAlgorithmParamNode = configurationOfThisConsumerId.path("algoparams").get(activeAlgorithm.name());
+
+            mlAlgorithmConfiguration = createBundle(consumerId, activeAlgorithm, predictionType, featureTypes, featureNames, inPredictionDataRecd, activeAlgorithmParamNode);
+        } catch (IllegalArgumentException ex) {
+            log.error("Exception1!");
+            return null;
+        } catch(Exception ex) {
+            log.error("Exception2!");
+            return null;
+        }
+
+        return mlAlgorithmConfiguration;
+    }
+
     public GenericAlgorithmConfigurationBundle InitializeMLEngineForModelCreation(String consumerId, ArrayList<ArrayList<String>> trainingData) {
         byte[] jsonData = new byte[0];
         JsonNode mlConfiguration;
