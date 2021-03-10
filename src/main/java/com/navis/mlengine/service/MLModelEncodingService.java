@@ -1,5 +1,6 @@
 package com.navis.mlengine.service;
 
+import com.google.common.collect.Lists;
 import com.navis.mlengine.entities.MLModelEncoding;
 import com.navis.mlengine.repository.IMLModelEncodingRepository;
 import com.navis.mlengine.service.interfaces.IMLModelEncodingService;
@@ -25,5 +26,10 @@ public class MLModelEncodingService implements IMLModelEncodingService {
     @Transactional
     public List<MLModelEncoding> getAllEncodingsForConsumerId(String consumerId) {
         return modelEncodingRepository.findAll();
+    }
+
+    @Override
+    public List<MLModelEncoding> addAll(List<MLModelEncoding> mlModelEncodingList) {
+        return Lists.newArrayList(this.modelEncodingRepository.saveAll(mlModelEncodingList));
     }
 }

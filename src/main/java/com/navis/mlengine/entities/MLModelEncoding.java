@@ -1,5 +1,6 @@
 package com.navis.mlengine.entities;
 
+import com.navis.mlengine.enums.EEncodingType;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -18,11 +19,17 @@ public class MLModelEncoding {
     @Column(name = "encoding_id")
     Long id;
 
+    @Column(name = "prediction_label")
+    Boolean predictionLabel;
+
+    @Column(name = "encoding_type")
+    EEncodingType encodingType;
+
     @Column(name = "consumer_id")
     String consumerId;
 
     @Column(name = "column_no")
-    Integer column;
+    Integer columnNumber;
 
     @Column(name = "field_name")
     String field;

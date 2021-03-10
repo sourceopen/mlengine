@@ -8,4 +8,6 @@ public interface IMLModelEncodingService {
     public List<MLModelEncoding> getAllEncodings();
 
     public List<MLModelEncoding> getAllEncodingsForConsumerId(String consumerId);
+
+    public List<MLModelEncoding> addAll(List<MLModelEncoding> mlModelEncodingList);
 }

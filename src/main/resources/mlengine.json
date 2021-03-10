@@ -56,7 +56,8 @@
 					"lambda": "0",
 					"gamma": "23.58",
 					"max_depth" : "6",
-					"n_estimators" : "82"
+					"n_estimators" : "82",
+					"n_rounds" : "200"
 				}
 			}
 		},
