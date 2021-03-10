@@ -18,12 +18,18 @@ public class MLModelEncoding {
     @Column(name = "encoding_id")
     Long id;
 
+    @Column(name = "consumer_id")
+    String consumerId;
+
     @Column(name = "column_no")
     Integer column;
 
     @Column(name = "field_name")
     String field;
 
-    @Column(name = "encoding")
-    String encoding;
+    @Column(name = "total_unique_values")
+    Integer totalUniqueValues;
+
+    @Column(name = "hot_number")
+    Integer hotNumber;
 }

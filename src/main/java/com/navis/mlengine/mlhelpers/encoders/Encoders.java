@@ -2,8 +2,10 @@ package com.navis.mlengine.mlhelpers.encoders;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import com.navis.mlengine.service.MLModelEncodingService;
 import javafx.util.Pair;
 import lombok.Getter;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.*;
 
@@ -13,12 +15,13 @@ public class Encoders {
     // Intgeger in the pair corresponds to the column(0 indexed) which was encoded
     //and hashmap contains value->encoding. encoding can be integer(for label encoding) or list<integer> for one hot encoding
     // List of the whole thing becuase we can have many columns encoded
+    @Autowired
+    private MLModelEncodingService mlModelEncodingService;
     private HashMap<Integer, HashMap<String, Object>> featureMatrixEncodingDetails = new HashMap<>();
 
     //encodedClassValues is encoding (in the classValues - can only be label encoded) for reconstruction -
     //the hashmap contains value->encoding. encoding can be integer only(only label encoding can be done for class values)
     private BiMap<String, Integer> classValueEncodingDetails = HashBiMap.create();
-
 
     private ArrayList<ArrayList<String>> featureMatrix;
     private ArrayList<String> classValues;
@@ -36,8 +39,6 @@ public class Encoders {
             encodedClassValues.add(e.replace("\n", "").replace("\r", ""));
 
         }
-
-
     }
 
     public Pair<ArrayList<String>, HashMap<String, Integer>> LabelEncodeClassValuesForModelCreation() {
@@ -216,6 +217,7 @@ public class Encoders {
 
             //save this encoding, so you can use it
             encoding.put(u, encodedValue);
+
         }
 
         for (ArrayList<String> dataRow : featureMatrix) {
