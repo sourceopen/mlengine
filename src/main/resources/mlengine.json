@@ -1,8 +1,8 @@
 {
 	"consumers" : {
-		"FULL_YARD_PREDICTION_PERCENTAGE_GEMLIK" : {
+		"VESSEL_VISIT_LATENESS" : {
 			"algorithm" : "XGBOOST",
-			"predictionType" : "REGRESSION",
+			"predictionType" : "BINARY_CLASSIFICATION",
 			"features" : {
 				"DOW": "NUMBER",
 				"DATE": "NUMBER",
@@ -30,17 +30,16 @@
 				}
 			}
 		},
-		"OSLO_BLOCK_WISE" : {
+		"FULL_YARD_PREDICTION_PERCENTAGE" : {
 			"algorithm" : "XGBOOST",
 			"predictionType" : "REGRESSION",
 			"features" : {
-				"GROUPNAMEID": "NUMBER",
-				"GROUPNAME": "CATEGORY",
+				"DOW": "NUMBER",
 				"DATE": "NUMBER",
 				"MONTH": "NUMBER",
 				"YEAR": "NUMBER",
-				"CUROCC": "NUMBER",
-				"PEROCC": "NUMBER"
+				"ACTUALOCC": "NUMBER",
+				"CUROCCPER": "NUMBER"
 			},
 			"algoparams" : {
 				"XGBOOST" : {
@@ -48,16 +47,17 @@
 					"objective" : "reg:squarederror",
 					"eval_metric" : "rmse",
 					"booster" : "gblinear",
-					"max_delta_step" : "2",
-					"min_child_wt" : "30",
-					"subsample" : "0.8",
-					"rounds" : "200",
-					"eta": "0.1",
+					"max_delta_step" : "0",
+					"min_child_wt" : "5",
+					"subsample" : "0.07789122913725656",
+					"rounds" : "2000",
+					"eta": "0.60584",
 					"alpha": "0",
 					"lambda": "0",
-					"gamma": "0",
+					"gamma": "23.58",
 					"max_depth" : "6",
-					"n_estimators" : "600"
+					"n_estimators" : "82",
+					"n_rounds" : "200"
 				}
 			}
 		},

@@ -113,7 +113,7 @@ public class XGBoostImplementationWorkflow extends BasePredictorWorkflow {
                     return false;
 
                 if (fT == EFeatureType.STRING || fT == EFeatureType.CATEGORY) {
-                    encoders.OneHotEncodeFeatureMatrixForModelCreation(featureIndex);
+                    encoders.OneHotEncodeFeatureMatrixForModelCreation(featureIndex, getXgBoostConfigurationBundle().getConsumerId());
                 } else if (fT == EFeatureType.BOOLEAN) {
                     encoders.BooleanEncodeFeatureMatrixForModelCreation(featureIndex);
                 }
@@ -283,6 +283,7 @@ public class XGBoostImplementationWorkflow extends BasePredictorWorkflow {
             params.put("lambda", this.xgBoostConfigurationBundle.getLambda());
             params.put("gamma", this.xgBoostConfigurationBundle.getGamma());
             params.put("n_estimators", this.xgBoostConfigurationBundle.getN_estimators());
+            params.put("n_rounds", this.xgBoostConfigurationBundle.getN_rounds());
 
             params.put("max_depth", 15);
             params.put("max_depth", 15);
