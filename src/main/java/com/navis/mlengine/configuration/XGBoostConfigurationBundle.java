@@ -31,9 +31,11 @@ public class XGBoostConfigurationBundle extends GenericAlgorithmConfigurationBun
     private String booster;
     private int n_estimators;
     private int n_rounds;
-
+/*
     public XGBoostConfigurationBundle(String consumerId, ArrayList<ArrayList<String>> trainingData, ArrayList<EFeatureType> featureTypes,
                                       ArrayList<String> inFeatureNames, EPredictionType predictionType) {
         super(consumerId, trainingData, featureTypes, inFeatureNames, predictionType);
     }
+
+ */
 }

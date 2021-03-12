@@ -20,7 +20,10 @@ public class GenericAlgorithmConfigurationBundle {
     //All raw data lives here
     protected ArrayList<ArrayList<String>> rawTrainingData;    //Length n, n-1 is data and n is the label of the data
 
+    protected ArrayList<ArrayList<String>> rawDataForPrediction;
+
     protected ArrayList<EFeatureType> featureTypesIncludingClass;    //1-1 correspondence with trainingData/testData
+    protected ArrayList<EFeatureType> featureTypesWithoutClassForPrediction;    //1-1 correspondence with trainingData/testData
     protected ArrayList<String> featureNames;
     protected EPredictionType predictionType;
 }

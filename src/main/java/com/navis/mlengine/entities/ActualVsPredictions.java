@@ -10,4 +10,6 @@ import java.util.List;
 public class ActualVsPredictions {
     List<Float> actuals;
     List<Float> predictions;
+    Double rmse;
+    Double mape;
 }

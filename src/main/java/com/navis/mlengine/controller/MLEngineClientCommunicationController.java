@@ -8,6 +8,7 @@ import com.navis.mlengine.configuration.NeuralNetworkConfigurationBundle;
 import com.navis.mlengine.configuration.XGBoostConfigurationBundle;
 import com.navis.mlengine.entities.ActualVsPredictions;
 import com.navis.mlengine.entities.MLModel;
+import com.navis.mlengine.enums.EPredictionType;
 import com.navis.mlengine.service.MLModelEncodingService;
 import com.navis.mlengine.service.MLModelService;
 import lombok.AllArgsConstructor;
@@ -26,6 +27,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.List;
 
 @RestController
 @AllArgsConstructor
@@ -59,19 +61,30 @@ public class MLEngineClientCommunicationController {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
 
-        try {
-            Booster booster = XGBoost.loadModel(new ByteArrayInputStream(model.getModelDump()));
-           // DMatrix testMatrix = new DMatrix(curatedTestData, testRowsCount, cols);
-            //booster.predict();
+        List<Float> predictions = new ArrayList<>();
 
-        } catch(XGBoostError | IOException xgberror) {
-            log.error("XGBoost error encountered!", xgberror);
+        try {
+
+            predictorWorkflow = this.getAppropriateWorkflowForPrediction(mlAlgorithmConfigurationBundle);
+            if(mlAlgorithmConfigurationBundle.getPredictionType() == EPredictionType.REGRESSION)
+                predictions = predictorWorkflow.predictFromModelForRegression(model, mlAlgorithmConfigurationBundle);
+            else if(mlAlgorithmConfigurationBundle.getPredictionType() == EPredictionType.BINARY_CLASSIFICATION)
+                predictions = predictorWorkflow.predictFromModelForBinaryClassification(model, mlAlgorithmConfigurationBundle);
+
+
+
+        } catch(Exception ex) {
+            log.error("XGBoost error encountered!", ex);
         }
 
-        //predictorWorkflow = this.getAppropriateWorkflow(model, consumerId);
+        return ResponseEntity
+                .created(URI.create(String.format("/api/CreateModelWithTrainingData")))
+                .body(predictions.toString());
+
+
 
      //   predictorWorkflow.buildAndSaveModel(mlAlgorithmConfigurationBundle);
-        return new ResponseEntity<>(HttpStatus.OK);
+        //return new ResponseEntity<>(HttpStatus.OK);
 
 
     }
@@ -91,39 +104,9 @@ public class MLEngineClientCommunicationController {
 
         Pair<ActualVsPredictions, MLModel> t =  predictorWorkflow.buildAndSaveModel(mlAlgorithmConfigurationBundle);
 
-      //  return new ResponseEntity<>(HttpStatus.OK);
-
-            return ResponseEntity
-                    .created(URI
-                            .create(String.format("/api/CreateModelWithTrainingData")))
+        return ResponseEntity
+                    .created(URI.create(String.format("/api/CreateModelWithTrainingData")))
                     .body(t.left());
-
-
-/*
-
-        long startTime = System.nanoTime();
-
-        String[][] newArray = new String[trainingDataRecd.size()][];
-        try {
-            int iter = 0;
-            for (iter = 0; iter < trainingDataRecd.size(); iter++) {
-                newArray[iter] = trainingDataRecd.get(iter).stream().toArray(String[]::new);
-            }
-        }catch(Exception ex) {
-            System.out.println("Exception!");
-            System.out.println("Exception!");
-        }
-
-        //String display = a.Display(newArray);
-        //XGBoostImplementationWorkflow xgBoostImplementation = new XGBoostImplementationWorkflow(entityManager);
-        XGBoostImplementationWorkflow xgBoostImplementation = new XGBoostImplementationWorkflow(mlModelService, mlModelEncodingService);
-        System.out.println("The number of models available now are : "+(mlModelService.getAllModels()).size());
-        MLModel m = xgBoostImplementation.createXGBoostModel();
-        mlModelService.saveModel(m);
-        List<MLModel> modelList = mlModelService.getAllModels();
-        System.out.println("The number of models available now are : "+modelList.size());
-        xgBoostImplementation.loadModelAndPredict(modelList.get(0));
-*/
     }
 
     private BasePredictorWorkflow getAppropriateWorkflow(GenericAlgorithmConfigurationBundle mlAlgorithmConfigurationBundle) {
@@ -134,14 +117,13 @@ public class MLEngineClientCommunicationController {
 
         return null;
     }
-/*
-    private BasePredictorWorkflow getAppropriateWorkflow(MLModel mlModel, String consumerId) {
-        if(EAlgorithm.valueOf(mlModel.getAlgorithm()).equals(EAlgorithm.XGBOOST))
-            return new XGBoostImplementationWorkflow(mlModel, consumerId);
-        else if(EAlgorithm.valueOf(mlModel.getAlgorithm()).equals(EAlgorithm.NN))
+
+    private BasePredictorWorkflow getAppropriateWorkflowForPrediction(GenericAlgorithmConfigurationBundle mlAlgorithmConfigurationBundle) {
+        if(mlAlgorithmConfigurationBundle instanceof XGBoostConfigurationBundle)
+            return new XGBoostImplementationWorkflow(mlAlgorithmConfigurationBundle, mlModelEncodingService);
+        if(mlAlgorithmConfigurationBundle instanceof NeuralNetworkConfigurationBundle)
             return null;    //Not yet implemented
 
         return null;
-    }*/
-
+    }
 }

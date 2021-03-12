@@ -5,6 +5,7 @@ import com.navis.mlengine.configuration.GenericAlgorithmConfigurationBundle;
 import com.navis.mlengine.configuration.XGBoostConfigurationBundle;
 import com.navis.mlengine.entities.ActualVsPredictions;
 import com.navis.mlengine.entities.MLModel;
+import com.navis.mlengine.entities.MLModelEncoding;
 import com.navis.mlengine.enums.EAlgorithm;
 import com.navis.mlengine.enums.EFeatureType;
 import com.navis.mlengine.enums.EPredictionType;
@@ -41,6 +42,7 @@ public class XGBoostImplementationWorkflow extends BasePredictorWorkflow {
     private OneHotEncoder oneHotEncoder;
     protected ArrayList<ArrayList<String>> encodedFeatureMatrix;
     protected ArrayList<String> encodedClassValues;
+    protected ArrayList<ArrayList<String>> encodedDataToPredictMatrix;
     private Encoders encoders;
     private XGBoostConfigurationBundle xgBoostConfigurationBundle;
     private float[] curatedTrainingData;
@@ -49,9 +51,12 @@ public class XGBoostImplementationWorkflow extends BasePredictorWorkflow {
     private float[] curatedValidationClasses;
     private float[] curatedTestData;
     private float[] curatedTestClasses;
+    private float[] curatedDataForPrediction;
+    private float[] curatedDummyDataClassesForPrediction;
     private DMatrix trainingMatrix;
     private DMatrix validationMatrix;
     private DMatrix testMatrix;
+    private DMatrix predictionDataMatrix;
     Integer rows;
     Integer trainingRowsCount;
     Integer validationRowsCount;
@@ -60,27 +65,53 @@ public class XGBoostImplementationWorkflow extends BasePredictorWorkflow {
     Integer validationRowsEndIndex;
     Integer testRowsEndIndex ;
 
-    //Constructor used for predicting from models\
-    /*TO CONTINUE
-    public XGBoostImplementationWorkflow(MLModel mlModel, String consumerId) throws Exception {
-        this.mlModel = mlModelService.getModelForConsumer(consumerId);
-        if(mlModel == null) {
-            log.error("Model not found for consumer :" +consumerId);
-            throw new Exception("Model not found for consumer :" + consumerId);
-            return;
+    @Override
+    public List<Float> predictFromModelForRegression(MLModel model, GenericAlgorithmConfigurationBundle bundle) {
+        try {
+            //Check if the raw data has rows to train data, all columns have a datatype, and all rows are of the same size
+            if (!elementaryCheckForPrediction(bundle)) {
+                log.error("Elementary check failed!");
+                return null;
+            }
+
+            //Curates the data and initializes the testMatrix as the training
+            Boolean curationSuccessful = encodeDataForPrediction();
+            if (!curationSuccessful)
+                return null;
+
+            Booster booster = XGBoost.loadModel(new ByteArrayInputStream(model.getModelDump()));
+
+            float predictions[][] = booster.predict(predictionDataMatrix);
+            ArrayList<Boolean> predictionEvaluation = new ArrayList<>();
+            Integer correctPredictions = 0, total = 0;
+            Double summation = 0.0;
+            Double mape_summation = 0.0;
+            List<Float> retPredictions = new ArrayList<>();
+            for(float f[] : predictions) {
+                retPredictions.add(f[0]);
+            }
+
+            return retPredictions;
+
+        } catch(Exception ex) {
+            log.error("Exception thrown in predictFromModelForRegression!", ex);
+            return null;
         }
-        this.mlModelService = inMlModelService;
+    }
+
+    @Override
+    public List<Float> predictFromModelForBinaryClassification(MLModel model, GenericAlgorithmConfigurationBundle bundle) {
+        return null;
+    }
+
+    //Constructor used for predictions
+    public XGBoostImplementationWorkflow(GenericAlgorithmConfigurationBundle bundle, MLModelEncodingService inMlModelEncodingService) {
+        this.xgBoostConfigurationBundle = (XGBoostConfigurationBundle)bundle;
         this.mlModelEncodingService = inMlModelEncodingService;
         //Take the raw data and meta data and seperate it out into the appropriate fields in BasePredictorWorkflow, to make it appropriate to work on it
-
-        encoders = new Encoders(super.featureMatrix, super.classValues);
-//        encoders.LabelEncodeMatrixForModelCreation(2);
-//        encoders.OneHotEncodeFeatureMatrixForModelCreation(4);
-//        encoders.LabelEncodeMatrixForModelCreation(1);
-//        encoders.OneHotEncodeFeatureMatrixForModelCreation(5);
-
-
-    }*/
+        this.collectTestDataFromInput(xgBoostConfigurationBundle);
+        encoders = new Encoders(super.dataForPrediction);
+    }
 
     //Constructor used for creating models
     public XGBoostImplementationWorkflow(GenericAlgorithmConfigurationBundle bundle, MLModelService inMlModelService, MLModelEncodingService inMlModelEncodingService) {
@@ -90,12 +121,6 @@ public class XGBoostImplementationWorkflow extends BasePredictorWorkflow {
         //Take the raw data and meta data and seperate it out into the appropriate fields in BasePredictorWorkflow, to make it appropriate to work on it
         this.seperateFeatureAndClass(xgBoostConfigurationBundle);
         encoders = new Encoders(super.featureMatrix, super.classValues);
-//        encoders.LabelEncodeMatrixForModelCreation(2);
-//        encoders.OneHotEncodeFeatureMatrixForModelCreation(4);
-//        encoders.LabelEncodeMatrixForModelCreation(1);
-//        encoders.OneHotEncodeFeatureMatrixForModelCreation(5);
-
-
     }
 
     private Boolean encodeDataForInput() {
@@ -104,7 +129,7 @@ public class XGBoostImplementationWorkflow extends BasePredictorWorkflow {
         }
 
         try {
-            //Curate feature data
+        //Curate feature data
             Integer featureIndex = 0;
             for (EFeatureType fT : featureTypes) {
                 System.out.println("Looking at index" + featureIndex);
@@ -194,7 +219,6 @@ public class XGBoostImplementationWorkflow extends BasePredictorWorkflow {
             }
             trainingDataFileClassinBeg.close();
 
-
             debugDump();
 
             //Set the training matrix
@@ -224,6 +248,94 @@ public class XGBoostImplementationWorkflow extends BasePredictorWorkflow {
             //Set the labels
             trainingMatrix.setLabel(curatedTrainingClasses);
             validationMatrix.setLabel(curatedValidationClasses);
+        } catch(XGBoostError xgBoostException) {
+            return false;
+        } catch(Exception ex) {
+            return false;
+        }
+        return true;
+    }
+
+    private Boolean encodeDataForPrediction() {
+        if(dataForPrediction == null) {
+            return false;
+        }
+
+        List<MLModelEncoding> encodedDataForDB = mlModelEncodingService.getAllEncodingsForConsumerId(getXgBoostConfigurationBundle().getConsumerId());
+
+        try {
+            //Curate feature data
+            Integer featureIndex = 0;
+            for (EFeatureType fT : featureTypes) {
+                System.out.println("Looking at index" + featureIndex);
+
+                if (fT == EFeatureType.UNKNOWN)
+                    return false;
+                if (fT == EFeatureType.STRING || fT == EFeatureType.CATEGORY) {
+                    //TODO : get the encoding from encodingsFromDB and encode the test data in the same way as the training data
+                } else if (fT == EFeatureType.BOOLEAN) {
+                    //TODO : translate t or true to 1 and f or false to 0
+                }
+
+                featureIndex++;
+            }
+
+            //Filll up the encoded data of feature matrix in class data member
+            //TODO: change to fill up with the right values(which would be filled in getEncodedTestMatrix above, but for now just fill it up with the data that came in
+            //encodedDataToPredictMatrix = encoders.getEncodedDataToPredictMatrix();
+            encodedDataToPredictMatrix = encoders.getMatrixForPrediction();
+            //TODO:Next line is temp work around should be removed since it would be filled up above and also used in the prev line
+            encoders.setEncodedDataToPredictMatrix(encoders.getMatrixForPrediction());
+
+            //Now we have the features and classes encoded so that it can be fed to XGBoost, fill it up into the data that is to be fed
+            rows = encoders.getEncodedDataToPredictMatrix().size();
+
+            //trainingRowsEndIndex = trainingRowsCount;
+            //validationRowsEndIndex = trainingRowsCount + validationRowsCount;
+            //testRowsEndIndex = trainingRowsCount + validationRowsCount + testRowsCount;
+
+            //We know that atleast one row exists for training, so get(0) is safe
+            Integer cols = encoders.getEncodedDataToPredictMatrix().get(0).size();
+            //curatedTrainingData = new float[trainingRowsCount * cols];
+            //curatedValidationData = new float[validationRowsCount * cols];
+            //curatedTestData = new float[testRowsCount * cols];
+            curatedDataForPrediction = new float[rows * cols];
+
+//            FileWriter trainingDataFileClassinBeg = new FileWriter("c:\\tmp\\test\\trainingDataWithClassInBeg.txt", false);
+  //          FileWriter trainingDataFileClassinEnd = new FileWriter("c:\\tmp\\test\\trainingDataWithClassInEnd.txt", false);
+
+      //      Integer validationMatrixIndex = 0, trainingMatrixIndex = 0, testMatrixIndex = 0;
+        //    Boolean printedStart=false, printedEnd=false;
+            Integer iter = 0;
+            for (Integer rowIter = 0; rowIter < rows; rowIter++) {
+                for (Integer colIter = 0; colIter < cols; colIter++) {
+                    try {
+                        curatedDataForPrediction[iter++] = Float.valueOf(encodedDataToPredictMatrix.get(rowIter).get(colIter));
+                    } catch(Exception ex) {
+                        System.out.println("Exception in filling input matrix for XGBoost");
+                        log.error("Exception in filling input matrix for XGBoost", ex);
+                    }
+                }
+            }
+
+            //Set the prediction DMatrix
+            predictionDataMatrix =  new DMatrix(curatedDataForPrediction, rows, cols);
+
+            FileWriter outsidedata = new FileWriter("c:\\tmp\\test\\thedatasentfortestingfromoutside.txt", false);
+            String contents = Arrays.toString(curatedDataForPrediction);
+            outsidedata.write(contents);
+            outsidedata.close();
+
+
+            curatedDataForPrediction = new float[rows];
+            curatedDummyDataClassesForPrediction = new float[rows];
+
+            for (Integer dummy = 0; dummy < rows; dummy++) {
+                curatedDummyDataClassesForPrediction[dummy] = 0.0f;
+            }
+
+            //Set the labels
+            predictionDataMatrix.setLabel(curatedDummyDataClassesForPrediction);
         } catch(XGBoostError xgBoostException) {
             return false;
         } catch(Exception ex) {
@@ -408,6 +520,11 @@ public class XGBoostImplementationWorkflow extends BasePredictorWorkflow {
             List<Float> retActuals = new ArrayList();
 
             //Calculate the percentage accuracy on 10% of the data given
+            FileWriter outsidedata = new FileWriter("c:\\tmp\\test\\thedatainternalfortesting.txt", false);
+            String contents = Arrays.toString(curatedTestData);
+            outsidedata.write(contents);
+            outsidedata.close();
+
             float predictions[][] = booster.predict(testMatrix);
             ArrayList<Boolean> predictionEvaluation = new ArrayList<>();
             Integer correctPredictions = 0, total = 0;
@@ -454,6 +571,8 @@ public class XGBoostImplementationWorkflow extends BasePredictorWorkflow {
             ActualVsPredictions results = new ActualVsPredictions();
             results.setActuals(retActuals);
             results.setPredictions(retPredictions);
+            results.setMape(mape);
+            results.setRmse(rms);
 
             Pair<ActualVsPredictions, MLModel> ret = new Pair(results,mlModel);
 
@@ -631,8 +750,6 @@ public class XGBoostImplementationWorkflow extends BasePredictorWorkflow {
 
             }
         */
-    @Override
-    public MLModel predictFromModel() {
-        return null;
-    }
+
+
 }

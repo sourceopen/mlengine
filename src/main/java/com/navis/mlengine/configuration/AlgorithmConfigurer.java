@@ -9,11 +9,14 @@ import com.navis.mlengine.enums.EPredictionType;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.IOUtils;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.util.ResourceUtils;
 
-import java.io.File;
-import java.io.IOException;
+
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -33,17 +36,30 @@ public class AlgorithmConfigurer {
     public GenericAlgorithmConfigurationBundle InitializeMLEngineForPredictionFromModel(String consumerId, ArrayList<ArrayList<String>> inPredictionDataRecd)
     {
         byte[] jsonData = new byte[0];
-        JsonNode mlConfiguration;
+        JsonNode mlConfiguration = null;
 
-        try {
-            File mlConfigurationFile = ResourceUtils.getFile(ML_CONFIG_FILE);
-            jsonData = Files.readAllBytes(Paths.get(mlConfigurationFile.getAbsolutePath()));
-            mlConfiguration =  (new ObjectMapper()).readTree(jsonData);
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
+        /*try {
+            File mlConfigurationFile = ResourceUtils.getFile(ML_CONFIG_FILE);*/
+            Resource resource = new ClassPathResource("mlengine.json");
+            InputStream inputStream = null;
+            try {
+                inputStream = resource.getInputStream();
+                Reader reader = new InputStreamReader(inputStream, "UTF-8");
+                jsonData = IOUtils.toByteArray(reader);
+                //        jsonData = Files.readAllBytes(Paths.get(mlConfigurationFile.getAbsolutePath()));
+                mlConfiguration =  (new ObjectMapper()).readTree(jsonData);
+            } catch (UnsupportedEncodingException exception) {
+                exception.printStackTrace();
+                return null;
 
+            } catch (IOException exception) {
+                exception.printStackTrace();
+
+                exception.printStackTrace();
+                return null;
+
+
+            }
         //Get the configuration of the consumerId
         JsonNode configurationOfThisConsumerId = (mlConfiguration.path(CONSUMERS_NODE)).path(consumerId);
 
@@ -67,7 +83,7 @@ public class AlgorithmConfigurer {
 
             JsonNode activeAlgorithmParamNode = configurationOfThisConsumerId.path("algoparams").get(activeAlgorithm.name());
 
-            mlAlgorithmConfiguration = createBundle(consumerId, activeAlgorithm, predictionType, featureTypes, featureNames, inPredictionDataRecd, activeAlgorithmParamNode);
+            mlAlgorithmConfiguration = createBundleForPrediction(consumerId, activeAlgorithm, predictionType, featureTypes, featureNames, inPredictionDataRecd, activeAlgorithmParamNode);
         } catch (IllegalArgumentException ex) {
             log.error("Exception1!");
             return null;
@@ -125,6 +141,45 @@ public class AlgorithmConfigurer {
         }
 
         return mlAlgorithmConfiguration;
+    }
+
+    private GenericAlgorithmConfigurationBundle createBundleForPrediction(String consumerId, EAlgorithm inAlgorithm, EPredictionType inPredictionType,
+                                                             ArrayList<EFeatureType> inFeatureTypes,
+                                                             ArrayList<String> inFeatureNames,
+                                                             ArrayList<ArrayList<String>> inDataForPrediction,
+                                                             JsonNode activeAlgoParamNode) {
+        if (inAlgorithm == EAlgorithm.XGBOOST) {
+            XGBoostConfigurationBundle xgBoostConfigurationBundle = new XGBoostConfigurationBundle();
+
+            if (!activeAlgoParamNode.isMissingNode())
+                xgBoostConfigurationBundle = (new ObjectMapper()).convertValue(activeAlgoParamNode, XGBoostConfigurationBundle.class);
+
+            xgBoostConfigurationBundle.setConsumerId(consumerId);
+            xgBoostConfigurationBundle.setFeatureTypesWithoutClassForPrediction(inFeatureTypes);
+            //Remove the label in the end - we expect the input to come in without the label(we will add a dummy label)
+            int toRemove = xgBoostConfigurationBundle.getFeatureTypesWithoutClassForPrediction().size() - 1;
+            xgBoostConfigurationBundle.getFeatureTypesWithoutClassForPrediction().remove(toRemove);
+            xgBoostConfigurationBundle.setPredictionType(inPredictionType);
+            xgBoostConfigurationBundle.setRawDataForPrediction(inDataForPrediction);
+
+            return xgBoostConfigurationBundle;
+        }
+
+        if (inAlgorithm == EAlgorithm.NN) {
+            NeuralNetworkConfigurationBundle neuralNetworkConfigurationBundle = new NeuralNetworkConfigurationBundle();
+
+            if (!activeAlgoParamNode.isMissingNode())
+                neuralNetworkConfigurationBundle = (new ObjectMapper()).convertValue(activeAlgoParamNode, NeuralNetworkConfigurationBundle.class);
+
+            neuralNetworkConfigurationBundle.setConsumerId(consumerId);
+            neuralNetworkConfigurationBundle.setFeatureTypesIncludingClass(inFeatureTypes);
+            neuralNetworkConfigurationBundle.setPredictionType(inPredictionType);
+            neuralNetworkConfigurationBundle.setRawDataForPrediction(inDataForPrediction);
+
+            return neuralNetworkConfigurationBundle;
+        }
+
+        return null;
     }
 
     private GenericAlgorithmConfigurationBundle createBundle(String consumerId, EAlgorithm inAlgorithm, EPredictionType inPredictionType,

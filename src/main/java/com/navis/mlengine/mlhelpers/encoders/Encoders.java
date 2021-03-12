@@ -7,11 +7,13 @@ import com.navis.mlengine.enums.EEncodingType;
 import com.navis.mlengine.service.MLModelEncodingService;
 import javafx.util.Pair;
 import lombok.Getter;
+import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.*;
 
 @Getter
+@Setter
 public class Encoders {
     //featureMatrixEncodingDetails is encodings (in the featureMatrix - can be label encoded or one hot encoded) for use constructing the test data -
     // Intgeger in the pair corresponds to the column(0 indexed) which was encoded
@@ -29,6 +31,19 @@ public class Encoders {
     private ArrayList<String> classValues;
     private ArrayList<ArrayList<String>> encodedFeatureMatrix;
     private ArrayList<String> encodedClassValues;
+
+    private ArrayList<ArrayList<String>> matrixForPrediction;
+    private ArrayList<ArrayList<String>> encodedDataToPredictMatrix;
+
+    public Encoders(ArrayList<ArrayList<String>> inTestMatrix) {
+        matrixForPrediction = inTestMatrix;
+
+        /*ArrayList<String> encodedClassValuesCopy = inClassValues;
+        for (String e : encodedClassValuesCopy) {
+            encodedClassValues.add(e.replace("\n", "").replace("\r", ""));
+
+        }*/
+    }
 
     public Encoders(ArrayList<ArrayList<String>> inFeatureMatrix, ArrayList<String> inClassValues) {
         featureMatrix = inFeatureMatrix;
