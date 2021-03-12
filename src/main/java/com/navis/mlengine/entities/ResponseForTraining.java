@@ -7,7 +7,7 @@ import java.util.List;
 
 @Getter
 @Setter
-public class ActualVsPredictions {
+public class ResponseForTraining {
     List<Float> actuals;
     List<Float> predictions;
     Double rmse;

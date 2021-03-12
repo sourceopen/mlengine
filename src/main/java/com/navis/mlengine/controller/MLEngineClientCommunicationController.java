@@ -6,8 +6,9 @@ import com.navis.mlengine.configuration.AlgorithmConfigurer;
 import com.navis.mlengine.configuration.GenericAlgorithmConfigurationBundle;
 import com.navis.mlengine.configuration.NeuralNetworkConfigurationBundle;
 import com.navis.mlengine.configuration.XGBoostConfigurationBundle;
-import com.navis.mlengine.entities.ActualVsPredictions;
 import com.navis.mlengine.entities.MLModel;
+import com.navis.mlengine.entities.ResponseForPredictions;
+import com.navis.mlengine.entities.ResponseForTraining;
 import com.navis.mlengine.enums.EPredictionType;
 import com.navis.mlengine.service.MLModelEncodingService;
 import com.navis.mlengine.service.MLModelService;
@@ -43,14 +44,13 @@ public class MLEngineClientCommunicationController {
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody()
     public ResponseEntity<String> getReadyStatus(HttpServletRequest request, HttpServletResponse response) {
-
         return new ResponseEntity("I am ready!", HttpStatus.OK);
     }
-// TO CONTINUE
+
     @PostMapping("/api/PredictUsingModel")
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody()
-    public ResponseEntity<String> predictUsingModel(@RequestBody ArrayList<ArrayList<String>> inPredictionDataRecd,  @RequestParam(name = "consumerId") String consumerId,
+    public ResponseEntity<ResponseForPredictions> predictUsingModel(@RequestBody ArrayList<ArrayList<String>> inPredictionDataRecd,  @RequestParam(name = "consumerId") String consumerId,
                                                                 HttpServletRequest request, HttpServletResponse response) {
         GenericAlgorithmConfigurationBundle mlAlgorithmConfigurationBundle = mlAlgorithmConfigurer.InitializeMLEngineForPredictionFromModel(consumerId, inPredictionDataRecd);
 
@@ -64,36 +64,32 @@ public class MLEngineClientCommunicationController {
         List<Float> predictions = new ArrayList<>();
 
         try {
-
             predictorWorkflow = this.getAppropriateWorkflowForPrediction(mlAlgorithmConfigurationBundle);
             if(mlAlgorithmConfigurationBundle.getPredictionType() == EPredictionType.REGRESSION)
                 predictions = predictorWorkflow.predictFromModelForRegression(model, mlAlgorithmConfigurationBundle);
             else if(mlAlgorithmConfigurationBundle.getPredictionType() == EPredictionType.BINARY_CLASSIFICATION)
                 predictions = predictorWorkflow.predictFromModelForBinaryClassification(model, mlAlgorithmConfigurationBundle);
-
-
-
         } catch(Exception ex) {
             log.error("XGBoost error encountered!", ex);
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
+
+        ResponseForPredictions res = new ResponseForPredictions();
+
+        res.setRmse(model.getRms());
+        res.setMape(model.getMape());
+        res.setPredictions(predictions);
 
         return ResponseEntity
                 .created(URI.create(String.format("/api/CreateModelWithTrainingData")))
-                .body(predictions.toString());
-
-
-
-     //   predictorWorkflow.buildAndSaveModel(mlAlgorithmConfigurationBundle);
-        //return new ResponseEntity<>(HttpStatus.OK);
-
-
+                .body(res);
     }
 
     @PostMapping("/api/CreateModelWithTrainingData")
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody()
-    public ResponseEntity<ActualVsPredictions> modelCreationWithTrainingData(@RequestBody ArrayList<ArrayList<String>> inTrainingDataRecd, @RequestParam(name = "consumerId") String consumerId,
-                                                                            HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<ResponseForTraining> modelCreationWithTrainingData(@RequestBody ArrayList<ArrayList<String>> inTrainingDataRecd, @RequestParam(name = "consumerId") String consumerId,
+                                                                             HttpServletRequest request, HttpServletResponse response) {
         GenericAlgorithmConfigurationBundle mlAlgorithmConfigurationBundle = mlAlgorithmConfigurer.InitializeMLEngineForModelCreation(consumerId, inTrainingDataRecd);
 
         if(mlAlgorithmConfigurationBundle == null) {
@@ -102,11 +98,11 @@ public class MLEngineClientCommunicationController {
 
         predictorWorkflow = this.getAppropriateWorkflow(mlAlgorithmConfigurationBundle);
 
-        Pair<ActualVsPredictions, MLModel> t =  predictorWorkflow.buildAndSaveModel(mlAlgorithmConfigurationBundle);
+        Pair<ResponseForTraining, MLModel> res =  predictorWorkflow.buildAndSaveModel(mlAlgorithmConfigurationBundle);
 
         return ResponseEntity
                     .created(URI.create(String.format("/api/CreateModelWithTrainingData")))
-                    .body(t.left());
+                    .body(res.left());
     }
 
     private BasePredictorWorkflow getAppropriateWorkflow(GenericAlgorithmConfigurationBundle mlAlgorithmConfigurationBundle) {

@@ -3,9 +3,9 @@ package com.navis.mlengine.algorithms.XGBoost;
 import com.navis.mlengine.algorithms.BasePredictorWorkflow;
 import com.navis.mlengine.configuration.GenericAlgorithmConfigurationBundle;
 import com.navis.mlengine.configuration.XGBoostConfigurationBundle;
-import com.navis.mlengine.entities.ActualVsPredictions;
 import com.navis.mlengine.entities.MLModel;
 import com.navis.mlengine.entities.MLModelEncoding;
+import com.navis.mlengine.entities.ResponseForTraining;
 import com.navis.mlengine.enums.EAlgorithm;
 import com.navis.mlengine.enums.EFeatureType;
 import com.navis.mlengine.enums.EPredictionType;
@@ -490,7 +490,7 @@ public class XGBoostImplementationWorkflow extends BasePredictorWorkflow {
     }
 
     @Override
-    public Pair<ActualVsPredictions, MLModel> buildAndSaveModel(GenericAlgorithmConfigurationBundle mlBundle) {
+    public Pair<ResponseForTraining, MLModel> buildAndSaveModel(GenericAlgorithmConfigurationBundle mlBundle) {
     //public MLModel buildAndSaveModel(GenericAlgorithmConfigurationBundle mlBundle) {
         try {
             //Check if the raw data has rows to train data, all columns have a datatype, and all rows are of the same size
@@ -568,13 +568,13 @@ public class XGBoostImplementationWorkflow extends BasePredictorWorkflow {
 
             createAndSavePersistableXGBoostModel(booster, mlBundle.getFeatureNames(), rms, mape, percentageAccuracy, testRowsCount);
 
-            ActualVsPredictions results = new ActualVsPredictions();
+            ResponseForTraining results = new ResponseForTraining();
             results.setActuals(retActuals);
             results.setPredictions(retPredictions);
             results.setMape(mape);
             results.setRmse(rms);
 
-            Pair<ActualVsPredictions, MLModel> ret = new Pair(results,mlModel);
+            Pair<ResponseForTraining, MLModel> ret = new Pair(results,mlModel);
 
             System.out.println("Created model!");
 

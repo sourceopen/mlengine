@@ -1,8 +1,8 @@
 package com.navis.mlengine.algorithms;
 
 import com.navis.mlengine.configuration.GenericAlgorithmConfigurationBundle;
-import com.navis.mlengine.entities.ActualVsPredictions;
 import com.navis.mlengine.entities.MLModel;
+import com.navis.mlengine.entities.ResponseForTraining;
 import com.navis.mlengine.enums.EFeatureType;
 import org.javatuples.Quartet;
 import org.javers.common.collections.Pair;
@@ -16,7 +16,7 @@ public abstract class BasePredictorWorkflow {
     protected ArrayList<ArrayList<String>> matrixForPrediction;
     protected ArrayList<ArrayList<String>> predictions;
 
-    public abstract Pair<ActualVsPredictions, MLModel> buildAndSaveModel(GenericAlgorithmConfigurationBundle mlBundle);
+    public abstract Pair<ResponseForTraining, MLModel> buildAndSaveModel(GenericAlgorithmConfigurationBundle mlBundle);
     public abstract List<Float> predictFromModelForRegression(MLModel model, GenericAlgorithmConfigurationBundle bundle);
     public abstract List<Float> predictFromModelForBinaryClassification(MLModel model, GenericAlgorithmConfigurationBundle bundle);
 
