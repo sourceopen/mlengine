@@ -6,20 +6,26 @@ import com.navis.mlengine.entities.MLModelEncoding;
 import com.navis.mlengine.enums.EEncodingType;
 import com.navis.mlengine.service.MLModelEncodingService;
 import javafx.util.Pair;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import java.util.*;
 
 @Getter
 @Setter
+@Component
+@AllArgsConstructor
+@NoArgsConstructor
 public class Encoders {
     //featureMatrixEncodingDetails is encodings (in the featureMatrix - can be label encoded or one hot encoded) for use constructing the test data -
     // Intgeger in the pair corresponds to the column(0 indexed) which was encoded
     //and hashmap contains value->encoding. encoding can be integer(for label encoding) or list<integer> for one hot encoding
     // List of the whole thing becuase we can have many columns encoded
-    @Autowired
+    //@Autowired
     private MLModelEncodingService mlModelEncodingService;
     private HashMap<Integer, HashMap<String, Object>> featureMatrixEncodingDetails = new HashMap<>();
 
@@ -45,7 +51,7 @@ public class Encoders {
         }*/
     }
 
-    public Encoders(ArrayList<ArrayList<String>> inFeatureMatrix, ArrayList<String> inClassValues) {
+    public encode(ArrayList<ArrayList<String>> inFeatureMatrix, ArrayList<String> inClassValues) {
         featureMatrix = inFeatureMatrix;
         classValues = inClassValues;
         encodedFeatureMatrix = inFeatureMatrix;

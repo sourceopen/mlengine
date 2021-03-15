@@ -12,4 +12,6 @@ public class ResponseForPredictions {
     public List<Float> predictions;
     public Double rmse;
     public Double mape;
+    public Double bias;
+    public Double accuracyPercentage;
 }

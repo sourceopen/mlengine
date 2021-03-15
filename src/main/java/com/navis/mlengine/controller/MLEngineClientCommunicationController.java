@@ -78,6 +78,7 @@ public class MLEngineClientCommunicationController {
 
         res.setRmse(model.getRms());
         res.setMape(model.getMape());
+        res.setBias(model.getBias());
         res.setPredictions(predictions);
 
         return ResponseEntity

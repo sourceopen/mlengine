@@ -23,6 +23,8 @@ import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoost;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 import org.javers.common.collections.Pair;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +37,9 @@ import java.util.*;
 @Setter
 @NoArgsConstructor
 public class XGBoostImplementationWorkflow extends BasePredictorWorkflow {
+    @Autowired
+    private ApplicationContext context;
+
     MLModel mlModel = null;
     private MLModelService mlModelService;
     private MLModelEncodingService mlModelEncodingService;
@@ -120,7 +125,8 @@ public class XGBoostImplementationWorkflow extends BasePredictorWorkflow {
         this.mlModelEncodingService = inMlModelEncodingService;
         //Take the raw data and meta data and seperate it out into the appropriate fields in BasePredictorWorkflow, to make it appropriate to work on it
         this.seperateFeatureAndClass(xgBoostConfigurationBundle);
-        encoders = new Encoders(super.featureMatrix, super.classValues);
+
+        encoders.encode(super.featureMatrix, super.classValues);
     }
 
     private Boolean encodeDataForInput() {
@@ -455,11 +461,12 @@ public class XGBoostImplementationWorkflow extends BasePredictorWorkflow {
         return true;
     }
 
-    private MLModel createAndSavePersistableXGBoostModel(Booster booster, List<String> features, Double rms, Double mape, Double percentageAccuracy, Integer testRowsCount) {
+    private MLModel createAndSavePersistableXGBoostModel(Booster booster, List<String> features, Double rmse, Double mape, Double bias, Double percentageAccuracy, Integer testRowsCount) {
         MLModel mlModel = new MLModel();
         try {
-            mlModel.setRms(rms);
+            mlModel.setRms(rmse);
             mlModel.setMape(mape);
+            mlModel.setBias(bias);
             mlModel.setAccuracyPercentage(percentageAccuracy);
             mlModel.setTestRows(testRowsCount);
             mlModel.setConsumerId(this.getXgBoostConfigurationBundle().getConsumerId());
@@ -530,6 +537,7 @@ public class XGBoostImplementationWorkflow extends BasePredictorWorkflow {
             Integer correctPredictions = 0, total = 0;
             Double summation = 0.0;
             Double mape_summation = 0.0;
+            Double bias_summation = 0.0;
             for(float f[] : predictions) {
                 retPredictions.add(f[0]);
                 retActuals.add(curatedTestClasses[total]);
@@ -542,6 +550,9 @@ public class XGBoostImplementationWorkflow extends BasePredictorWorkflow {
                 } else {
                     Double diff = Double.valueOf(curatedTestClasses[total] - f[0]);
 
+                    //MAD
+                    bias_summation += diff;
+
                     //MAPE
                     Double thisTerm = diff/curatedTestClasses[total];
                     mape_summation += Math.abs(thisTerm);
@@ -552,27 +563,32 @@ public class XGBoostImplementationWorkflow extends BasePredictorWorkflow {
                 }
                 total++;
             }
-            Double percentageAccuracy=0.0, rms=0.0, mape=0.0;
+            Double percentageAccuracy=0.0, rmse=0.0, mape=0.0, bias = 0.0;
             if(this.getXgBoostConfigurationBundle().getPredictionType() == EPredictionType.MULTICLASS_CLASSIFICATION ||
                     this.getXgBoostConfigurationBundle().getPredictionType() == EPredictionType.BINARY_CLASSIFICATION) {
                 percentageAccuracy = ((Double.valueOf( correctPredictions) / Double.valueOf(total))) * 100.0;
                 System.out.println("The accuracy percentage as calculated on " + testRowsCount + "(10% of the given data) rows is " + percentageAccuracy);
 
             } else {
-                rms = Math.sqrt(summation / total);
-                System.out.println("RMS as calculated on " + testRowsCount + "(10% of the given data) rows is " + rms);
+                Double mse = summation / total;
+                rmse = Math.sqrt(mse);
+                System.out.println("RMSE as calculated on " + testRowsCount + "(10% of the given data) rows is " + rmse);
 
                 mape = mape_summation / total;
+                mape = mape * 100;
                 System.out.println("MAPE  as calculated on " + testRowsCount + "(10% of the given data) rows is " + mape + "%");
+
+                bias = bias_summation / total;
+                System.out.println("Avg. Bias  as calculated on " + testRowsCount + "(10% of the given data) rows is " + bias);
             }
 
-            createAndSavePersistableXGBoostModel(booster, mlBundle.getFeatureNames(), rms, mape, percentageAccuracy, testRowsCount);
+            createAndSavePersistableXGBoostModel(booster, mlBundle.getFeatureNames(), rmse, mape, bias, percentageAccuracy, testRowsCount);
 
             ResponseForTraining results = new ResponseForTraining();
             results.setActuals(retActuals);
             results.setPredictions(retPredictions);
             results.setMape(mape);
-            results.setRmse(rms);
+            results.setRmse(rmse);
 
             Pair<ResponseForTraining, MLModel> ret = new Pair(results,mlModel);
 

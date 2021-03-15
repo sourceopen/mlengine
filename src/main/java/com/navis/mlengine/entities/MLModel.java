@@ -22,6 +22,9 @@ public class MLModel implements Serializable {
     @Column(name = "mape")
     private Double mape;
 
+    @Column(name = "bias")
+    private Double bias;
+
     @Column(name = "rmse")
     private Double rms;
 

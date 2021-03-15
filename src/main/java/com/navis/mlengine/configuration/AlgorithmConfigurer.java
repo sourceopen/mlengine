@@ -10,6 +10,8 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
@@ -29,6 +31,9 @@ import java.util.Map;
 public class AlgorithmConfigurer {
 
     private GenericAlgorithmConfigurationBundle mlAlgorithmConfiguration;
+
+    @Autowired
+    private ApplicationContext context;
 
     private static final String CONSUMERS_NODE = "consumers";
     private static final String ML_CONFIG_FILE = "classpath:mlengine.json";
@@ -149,7 +154,10 @@ public class AlgorithmConfigurer {
                                                              ArrayList<ArrayList<String>> inDataForPrediction,
                                                              JsonNode activeAlgoParamNode) {
         if (inAlgorithm == EAlgorithm.XGBOOST) {
-            XGBoostConfigurationBundle xgBoostConfigurationBundle = new XGBoostConfigurationBundle();
+            //XGBoostConfigurationBundle xgBoostConfigurationBundle = new XGBoostConfigurationBundle();
+            XGBoostConfigurationBundle xgBoostConfigurationBundle = context.getBean(XGBoostConfigurationBundle.class);
+            XGBoostConfigurationBundle xgBoostConfigurationBundle1 = context.getBean(XGBoostConfigurationBundle.class);
+            xgBoostConfigurationBundle.setGamma(1.2);
 
             if (!activeAlgoParamNode.isMissingNode())
                 xgBoostConfigurationBundle = (new ObjectMapper()).convertValue(activeAlgoParamNode, XGBoostConfigurationBundle.class);

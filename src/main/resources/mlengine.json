@@ -8,8 +8,10 @@
 				"DATE": "NUMBER",
 				"MONTH": "NUMBER",
 				"YEAR": "NUMBER",
-				"ACTUALOCC": "NUMBER",
-				"CUROCCPER": "NUMBER"
+				"SERVICE": "CATEGORY",
+				"CLASSIFICATION": "NUMBER",
+				"OWNER": "CATEGORY",
+				"LATENESS": "BOOLEAN"
 			},
 			"algoparams" : {
 				"XGBOOST" : {
